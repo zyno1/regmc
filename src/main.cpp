@@ -49,7 +49,7 @@ int main(int argc, char const** argv) {
             res += v[i] * sizes[i] / vars[i].size();
     }
 
-    std::cout << res << "\n";
+    //std::cout << res << "\n";
     std::cout << res * cnf.get_nb_vars() << "\n";
 
     return 0;
