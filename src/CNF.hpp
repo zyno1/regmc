@@ -43,6 +43,39 @@ public:
     void resolution_extend();
     void subsumption();
 
+    std::vector<std::size_t> get_nb_by_clause_len() const {
+        std::vector<std::size_t> res;
+        res.push_back(0);
+        res.push_back(units.size());
+
+        for(auto const& c : cnf) {
+            while(c.size() >= res.size()) {
+                res.push_back(0);
+            }
+            res[c.size()]++;
+        }
+
+        return res;
+    }
+
+    std::vector<std::set<Literal> > get_vars_by_clause_len() const {
+        std::vector<std::set<Literal> > res;
+        res.push_back({});
+        res.push_back(units);
+
+        for(auto const& c : cnf) {
+            while(c.size() >= res.size()) {
+                res.push_back({});
+            }
+            for(auto const& l : c) {
+                res[c.size()].insert(std::abs(l));
+                res[0].insert(std::abs(l));
+            }
+        }
+
+        return res;
+    }
+
     std::set<Literal> const& get_vars() const {
         return vars;
     }
