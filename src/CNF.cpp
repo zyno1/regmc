@@ -173,14 +173,6 @@ void CNF::simplify() {
         for(Literal const& l : u) {
             Literal nl = ~l;
 
-            if(l.get() >= idx.size()) {
-                std::cout << "error\n";
-                exit(-1);
-            }
-            if(idx[l.get()].empty()) {
-                std::cout << "empty\n";
-                exit(-1);
-            }
             for(std::size_t i : idx[l.get()]) {
                 if(active[i]) {
                     nb_active -= 1;

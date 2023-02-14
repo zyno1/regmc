@@ -4,6 +4,10 @@
 #include "CNF.hpp"
 
 int main(int argc, char const** argv) {
+    if(argc < 2) {
+        std::cerr << "too few arguments\nexiting\n";
+        exit(1);
+    }
     std::string const path(argv[1]);
     CNF cnf(path.c_str());
 
