@@ -10,141 +10,250 @@
 #include<map>
 #include<ostream>
 
-using Literal = int;
-using Clause = std::set<Literal>;
+//using Literal = int;
+struct Literal;
+struct Variable;
 
-bool is_unit(Clause const& c);
-bool is_empty(Clause const& c);
+struct Literal {
+    private:
+    int l;
+
+    public:
+    Literal (Variable v);
+    Literal (Variable v, int sign);
+    Literal (int i);
+
+    Literal(Literal const& v) = default;
+    Literal(Literal && v) = default;
+
+    Literal& operator= (Literal const& p) = default;
+    Literal& operator= (Literal && p) = default;
+
+    inline int sign() const { return l & 1 ? -1 : 1; }
+    inline int to_int() const { return sign() * ((l >> 1) + 1); }
+    inline int get() const { return l; }
+
+    bool operator == (Literal p) const;
+    bool operator != (Literal p) const;
+    bool operator <  (Literal p) const; // '<' makes p, ~p adjacent in the ordering.  
+
+    friend inline Literal operator ~ (Literal p);
+};
+
+inline Literal operator ~ (Literal p) {
+    p.l ^= 1;
+    return p;
+}
+
+inline std::ostream & operator<<(std::ostream & out, Literal const& l) {
+    out << l.to_int();
+    //out << l.get();
+    return out;
+}
+
+struct Variable {
+    private:
+    int const v;
+
+    public:
+    Variable(int i);
+    Variable(Literal l);
+
+    Variable(Variable const& v) = default;
+    Variable(Variable && v) = default;
+
+    Variable& operator= (Variable const& p) = default;
+    Variable& operator= (Variable && p) = default;
+
+    inline int to_int() const { return v + 1; }
+    inline int get() const { return v; }
+
+    bool operator == (Variable p) const;
+    bool operator != (Variable p) const;
+    bool operator <  (Variable p) const;
+};
+
+inline std::ostream & operator<<(std::ostream & out, Variable const& v) {
+    out << v.to_int();
+    return out;
+}
+
+struct Clause {
+    private:
+    std::vector<Literal> c;
+
+    public:
+    Clause();
+    Clause(Clause const& c) = default;
+    Clause(Clause && c) = default;
+
+    Clause& operator=(Clause const& c) = default;
+    Clause& operator=(Clause && c) = default;
+
+    void push(Literal const& l);
+    void remove(Literal const& l);
+    void remove(Variable const& v);
+    bool contains(Literal const& l) const;
+
+    inline auto begin() const {
+        return c.begin();
+    }
+
+    inline auto end() const {
+        return c.end();
+    }
+
+    inline std::size_t size() const {
+        return c.size();
+    }
+
+    inline auto operator[](std::size_t const& i) {
+        return c[i];
+    }
+};
+
+inline std::ostream & operator<<(std::ostream & out, Clause const& c) {
+    for(auto const& l : c) {
+        out << l << " ";
+    }
+    out << "0";
+    return out;
+}
 
 class CNF {
-private:
-    std::vector<Clause> cnf;
-    std::set<Literal> units;
-    std::set<Literal> free;
-    std::set<Literal> vars;
+    private:
+        std::vector<Clause> clauses;
+        std::vector<bool> active;
+        std::vector<std::set<std::size_t> > idx;
+        std::set<Literal> units;
+        std::set<Variable> free;
+        std::set<Variable> vars;
+        std::set<Variable> ind;
 
-    std::set<Literal> ind;
+        std::size_t nb_active = 0;
 
-public:
-    CNF() = default;
-    CNF(char const* path);
-    CNF(CNF const& c) = default;
-    CNF(CNF && c) = default;
+    public:
+        CNF() = default;
+        CNF(char const* path);
+        CNF(CNF const& c) = default;
+        CNF(CNF && c) = default;
 
-    CNF& operator=(CNF const& c) = default;
-    CNF& operator=(CNF && c) = default;
+        CNF& operator=(CNF const& c) = default;
+        CNF& operator=(CNF && c) = default;
 
-    std::size_t get_nb_vars() const;
-    std::size_t get_nb_clauses() const;
-    std::size_t get_nb_units() const;
+        void compute_free_vars();
+        void simplify();
 
-    std::size_t get_nb_binary() const;
+        std::vector<std::size_t> get_nb_by_clause_len() const;
+        std::vector<std::set<Variable> > get_vars_by_clause_len() const;
 
-    void resolution_extend();
-    void subsumption();
-
-    std::vector<std::size_t> get_nb_by_clause_len() const {
-        std::vector<std::size_t> res;
-        res.push_back(0);
-        res.push_back(units.size());
-
-        for(auto const& c : cnf) {
-            while(c.size() >= res.size()) {
-                res.push_back(0);
-            }
-            res[c.size()]++;
-        }
-
-        return res;
-    }
-
-    std::vector<std::set<Literal> > get_vars_by_clause_len() const {
-        std::vector<std::set<Literal> > res;
-        res.push_back({});
-        res.push_back(units);
-
-        for(auto const& c : cnf) {
-            while(c.size() >= res.size()) {
-                res.push_back({});
-            }
-            for(auto const& l : c) {
-                res[c.size()].insert(std::abs(l));
-                res[0].insert(std::abs(l));
-            }
-        }
-
-        return res;
-    }
-
-    std::set<Literal> const& get_vars() const {
-        return vars;
-    }
-
-    std::set<Literal> const& get_units() const {
-        return units;
-    }
-
-    std::set<Literal> const& get_free_vars() const {
-        return free;
-    }
-
-    std::set<Literal> const& get_ind() const {
-        return ind;
-    }
-
-    bool unsat() const;
-
-    std::map<Literal, int> count_var_occurrences() const;
-    Literal find_most_occurring_variable() const;
-
-    std::map<Literal, int> count_literal_occurrences() const;
-    Literal find_most_occurring_literal() const;
-
-    void compute_free_vars();
-
-    bool simplify(Literal backbone_lit);
-    void propagate(std::vector<int> const& backbone);
-    bool simplify();
-    CNF reduce(std::vector<Literal> & map) const;
-
-    bool replace(Literal s, Literal r);
-    bool simplify_binary();
-
-    bool is_free(Literal l) const;
-    bool is_const(Literal l) const;
-    Literal get_sign_of_const(Literal l) const;
-
-    void merge(CNF const& c);
-
-    void add_clause(Clause const& c);
-    int add_var() {
-        int n = get_nb_vars() + 1;
-        vars.insert(n);
-        return n;
-    }
-
-    std::vector<Clause>::const_iterator begin() const {
-        return cnf.begin();
-    }
-    std::vector<Clause>::const_iterator end() const {
-        return cnf.end();
-    }
-
-    std::vector<Clause>::iterator begin() {
-        return cnf.begin();
-    }
-    std::vector<Clause>::iterator end() {
-        return cnf.end();
-    }
-
-    Clause const& operator[](std::size_t i) const {
-        return cnf[i];
-    }
+        inline std::size_t nb_vars() const { return vars.size(); }
+        inline std::size_t nb_free_vars() const { return free.size(); }
+        inline std::size_t nb_c_vars() const { return nb_vars() - nb_free_vars(); }
+        inline std::size_t nb_clauses() const { return clauses.size(); }
+        inline std::size_t nb_active_clauses() const { return nb_active; }
 
     friend std::ostream & operator<<(std::ostream & out, CNF const& cnf);
 };
 
 std::ostream & operator<<(std::ostream & out, CNF const& cnf);
+
+//using Clause = std::set<Literal>;
+
+//bool is_unit(Clause const& c);
+//bool is_empty(Clause const& c);
+
+//class CNF {
+//private:
+    //std::vector<Clause> cnf;
+    //std::set<Literal> units;
+    //std::set<Literal> free;
+    //std::set<Literal> vars;
+
+    //std::set<Literal> ind;
+
+//public:
+    //CNF() = default;
+    //CNF(char const* path);
+    //CNF(CNF const& c) = default;
+    //CNF(CNF && c) = default;
+
+    //CNF& operator=(CNF const& c) = default;
+    //CNF& operator=(CNF && c) = default;
+
+    //std::size_t get_nb_vars() const;
+    //std::size_t get_nb_clauses() const;
+    //std::size_t get_nb_units() const;
+
+    //std::vector<std::size_t> get_nb_by_clause_len() const {
+        //std::vector<std::size_t> res;
+        //res.push_back(0);
+        //res.push_back(units.size());
+
+        //for(auto const& c : cnf) {
+            //while(c.size() >= res.size()) {
+                //res.push_back(0);
+            //}
+            //res[c.size()]++;
+        //}
+
+        //return res;
+    //}
+
+    //std::vector<std::set<Literal> > get_vars_by_clause_len() const {
+        //std::vector<std::set<Literal> > res;
+        //res.push_back({});
+        //res.push_back(units);
+
+        //for(auto const& c : cnf) {
+            //while(c.size() >= res.size()) {
+                //res.push_back({});
+            //}
+            //for(auto const& l : c) {
+                //res[c.size()].insert(std::abs(l));
+                //res[0].insert(std::abs(l));
+            //}
+        //}
+
+        //return res;
+    //}
+
+    //std::set<Literal> const& get_vars() const {
+        //return vars;
+    //}
+
+    //std::set<Literal> const& get_units() const {
+        //return units;
+    //}
+
+    //std::set<Literal> const& get_free_vars() const {
+        //return free;
+    //}
+
+    //std::set<Literal> const& get_ind() const {
+        //return ind;
+    //}
+
+    //bool unsat() const;
+
+    //void compute_free_vars();
+
+    //bool simplify(Literal backbone_lit);
+    ////void propagate(std::vector<int> const& backbone);
+    //bool simplify();
+    ////CNF reduce(std::vector<Literal> & map) const;
+
+    //void add_clause(Clause const& c);
+    //int add_var() {
+        //int n = get_nb_vars() + 1;
+        //vars.insert(n);
+        //return n;
+    //}
+
+    ////friend std::ostream & operator<<(std::ostream & out, CNF const& cnf);
+//};
+
+////std::ostream & operator<<(std::ostream & out, CNF const& cnf);
 
 
 #endif //BN_CNF_HPP
