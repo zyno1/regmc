@@ -32,3 +32,6 @@
 *.app
 
 regmc
+regmc_d
+
+*.od
