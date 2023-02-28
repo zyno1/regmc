@@ -53,6 +53,10 @@ Clause::Clause() {
 }
 
 void Clause::push(Literal const& l) {
+    for(auto const& i : c) {
+        if(i == l)
+            return;
+    }
     c.push_back(l);
 }
 

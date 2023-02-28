@@ -149,6 +149,7 @@ class CNF {
 
         inline std::size_t nb_vars() const { return vars.size(); }
         inline std::size_t nb_free_vars() const { return free.size(); }
+        inline std::size_t nb_units() const { return units.size(); }
         inline std::size_t nb_c_vars() const { return nb_vars() - nb_free_vars(); }
         inline std::size_t nb_clauses() const { return clauses.size(); }
         inline std::size_t nb_active_clauses() const { return nb_active; }

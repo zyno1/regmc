@@ -31,13 +31,14 @@ int main(int argc, char const** argv) {
     ////     -0.0006375938024977149};
     
     // with BCP:
-     double const intercept = 0.39868256396085533;
-     double const cr = -0.001941491867362755;
+     double const intercept = 0.4784764681683733;
+     double const cr = 0.004870940193116897;
      std::vector<double> v = {0,
-         -0.14354043772150665,
-         -0.04408040163500509,
-         0.07113005343417171,
-         -0.005845120241618398,
+         0,
+         -0.1662521139035124,
+         -0.07974636487792655,
+         0.028067156465960284,
+         0.0017585449812209347,
          };
 
      //for(std::size_t i = 0; i < sizes.size(); i++) {
@@ -51,13 +52,13 @@ int main(int argc, char const** argv) {
     double res = intercept;
     res += cr * cnf.nb_active_clauses() / vars[0].size();
 
-    for(std::size_t i = 1; i < std::min(sizes.size(), v.size()); i++) {
-        if(sizes[i] != 0)
-            res += v[i] * sizes[i] / vars[i].size();
+    for(std::size_t i = 2; i < std::min(sizes.size(), v.size()); i++) {
+        //if(vars[i].size() != 0)
+        res += v[i] * sizes[i] / (vars[i].size() + 1);
     }
 
     ////std::cout << res << "\n";
-    std::cout << res * cnf.nb_vars() << "\n";
+    std::cout << res * vars[0].size() + cnf.nb_free_vars() << "\n";
 
     return 0;
 }
