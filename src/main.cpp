@@ -50,7 +50,9 @@ int main(int argc, char const** argv) {
      //}
 
     double res = intercept;
-    res += cr * cnf.nb_active_clauses() / vars[0].size();
+    if(vars[0].size() > 0) {
+        res += cr * cnf.nb_active_clauses() / vars[0].size();
+    }
 
     for(std::size_t i = 2; i < std::min(sizes.size(), v.size()); i++) {
         //if(vars[i].size() != 0)
